@@ -11,22 +11,24 @@ import Libp2p
 
 class ViewController: UIViewController {
     
-    var libp2p:Libp2pLibp2p? = nil
+    var host:Libp2pHost? = nil
 
     @IBOutlet weak var theLabel: UILabel!
+    @IBOutlet weak var peerIDbox: UITextField!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        Libp2pPrintSomething()
-        
+        let casTpt = iosTransport()
         
         var opterr:NSError?
-        libp2p = Libp2pNew(&opterr)
+        host = Libp2pNew(casTpt, &opterr)
         if let err = opterr {
             print("bad error: ", err)
             return
         }
+        
+        peerIDbox.text = host!.peerInfo().id_().string()
         
         let pinfo = Libp2pParseMultiaddrString("/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ", &opterr)
         if let err = opterr {
@@ -35,19 +37,17 @@ class ViewController: UIViewController {
         }
         
         do {
-            try libp2p?.connect(pinfo)
+            try host!.connect(pinfo)
         } catch {
             print("connect failed: \(error)")
         }
         
-        doThePing()
     }
     
     @IBAction func clickTheButton(_ sender: Any) {
         let start = DispatchTime.now()
         doThePing()
         let end = DispatchTime.now()
-        
         
         let nanoTime = end.uptimeNanoseconds - start.uptimeNanoseconds // <<<<< Difference in nano seconds (UInt64)
         let timeInterval = Double(nanoTime) / 1_000_000_000
@@ -66,12 +66,9 @@ class ViewController: UIViewController {
         }
         
         do {
-            let stream = try libp2p!.newStream(pinfo?.id_(), proto: "/ipfs/ping/1.0.0")
+            let stream = try host!.newStream(pinfo?.id_(), proto: "/ipfs/ping/1.0.0")
             var data = Data(count: 32)
             data[4] = 6 // just so i can distinguish it from an empty array
-            
-            //let str1 = String(data: data.base64EncodedData(), encoding: String.Encoding.utf8)
-            //print("about to send message \(str1)")
             
             var n:Int = 0
             try stream.write(data, ret0_: &n)

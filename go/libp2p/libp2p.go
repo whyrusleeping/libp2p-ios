@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -12,11 +14,22 @@ import (
 	"github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
+	"github.com/libp2p/go-libp2p-transport"
 	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr-net"
 )
 
-type Libp2p struct {
+type Host struct {
 	host host.Host
+}
+
+func (h *Host) PeerInfo() *PeerInfo {
+	return &PeerInfo{
+		pinfo: &pstore.PeerInfo{
+			ID:    h.host.ID(),
+			Addrs: h.host.Addrs(),
+		},
+	}
 }
 
 type PeerInfo struct {
@@ -41,7 +54,7 @@ func ParseMultiaddrString(a string) (*PeerInfo, error) {
 	return &PeerInfo{pi}, nil
 }
 
-func (l *Libp2p) Connect(pinfo *PeerInfo) error {
+func (l *Host) Connect(pinfo *PeerInfo) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -60,6 +73,10 @@ type PeerID struct {
 	pid peer.ID
 }
 
+func (pid PeerID) String() string {
+	return pid.pid.Pretty()
+}
+
 // have to wrap 'Stream' as the gomobile binder can't handle the 'Conn' type on
 // the 'Conn' method of streams...
 type Stream struct {
@@ -74,16 +91,10 @@ func (s *Stream) ReadData(max int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("read data: ", max, n, b[:n])
 	return b[:n], err
 }
 
-func PrintSomething() {
-	fmt.Println("Dear Steve Jobs, Please let this work")
-}
-
 func (s *Stream) Write(b []byte) (int, error) {
-	fmt.Println("writing data: ", b)
 	return s.s.Write(b)
 }
 
@@ -95,7 +106,7 @@ func (s *Stream) Reset() error {
 	return s.s.Reset()
 }
 
-func (l *Libp2p) NewStream(pid *PeerID, proto string) (*Stream, error) {
+func (l *Host) NewStream(pid *PeerID, proto string) (*Stream, error) {
 	s, err := l.host.NewStream(context.TODO(), pid.pid, protocol.ID(proto))
 	if err != nil {
 		return nil, err
@@ -104,11 +115,128 @@ func (l *Libp2p) NewStream(pid *PeerID, proto string) (*Stream, error) {
 	return &Stream{s}, nil
 }
 
-func New() (*Libp2p, error) {
-	h, err := libp2p.New(context.TODO())
+func New(t Transport) (*Host, error) {
+	tptopt := libp2p.Transport(&transportConverter{t})
+	h, err := libp2p.New(context.TODO(), tptopt)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Libp2p{host: h}, nil
+	return &Host{host: h}, nil
 }
+
+type Multiaddr struct {
+	addr ma.Multiaddr
+
+	net  string
+	host string
+	port uint16
+}
+
+func (m *Multiaddr) GetHost() (string, error) {
+	if m.net == "" {
+		if err := m.parse(); err != nil {
+			return "", err
+		}
+	}
+
+	return m.host, nil
+}
+
+func (m *Multiaddr) GetPort() (int, error) {
+	if m.net == "" {
+		if err := m.parse(); err != nil {
+			return 0, err
+		}
+	}
+
+	return int(m.port), nil
+}
+
+func (m *Multiaddr) parse() error {
+	net, host, err := manet.DialArgs(m.addr)
+	if err != nil {
+		return err
+	}
+
+	parts := strings.Split(host, ":")
+	if len(parts) != 2 {
+		return fmt.Errorf("expected two parts to host from manet")
+	}
+
+	port, err := strconv.ParseUint(parts[1], 10, 16)
+	if err != nil {
+		return err
+	}
+
+	m.net = net
+	m.host = host
+	m.port = uint16(port)
+	return nil
+}
+
+type Conn struct {
+}
+
+type Listener struct {
+}
+
+type Transport interface {
+	Dial(raddr *Multiaddr, p *PeerID) (*Conn, error)
+
+	CanDial(addr *Multiaddr) bool
+
+	Listen(laddr *Multiaddr) (*Listener, error)
+
+	//ForEachProtocol(func(int))
+	//Protocols() []int
+
+	Proxy() bool
+}
+
+type transportConverter struct {
+	t Transport
+}
+
+func (tc *transportConverter) Dial(ctx context.Context, raddr ma.Multiaddr, p peer.ID) (transport.Conn, error) {
+	c, err := tc.t.Dial(&Multiaddr{addr: raddr}, &PeerID{p})
+	if err != nil {
+		return nil, err
+	}
+
+	_ = c
+	fmt.Println("Need to convert the fake Conn's back up!")
+	return nil, nil
+}
+
+func (tc *transportConverter) CanDial(addr ma.Multiaddr) bool {
+	return tc.t.CanDial(&Multiaddr{addr: addr})
+}
+
+func (tc *transportConverter) Listen(laddr ma.Multiaddr) (transport.Listener, error) {
+	list, err := tc.t.Listen(&Multiaddr{addr: laddr})
+	if err != nil {
+		return nil, err
+	}
+
+	_ = list
+	panic("figure out how to 'unwrap' this")
+}
+
+func (tc *transportConverter) Proxy() bool {
+	return tc.t.Proxy()
+}
+
+func (tc *transportConverter) Protocols() []int {
+	var out []int
+	/* TODO: figure out how to get an array of things back...
+	tc.t.ForEachProtocol(func(i int) {
+		out = append(out, i)
+	})
+	*/
+	return out
+}
+
+var _ transport.Transport = (*transportConverter)(nil)
+
+var _ = transport.AcceptTimeout
