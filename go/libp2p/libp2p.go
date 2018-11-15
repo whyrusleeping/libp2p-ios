@@ -3,6 +3,7 @@ package libp2p
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/libp2p/go-libp2p"
@@ -20,6 +21,10 @@ type Libp2p struct {
 
 type PeerInfo struct {
 	pinfo *pstore.PeerInfo
+}
+
+func (pi *PeerInfo) ID() *PeerID {
+	return &PeerID{pi.pinfo.ID}
 }
 
 func ParseMultiaddrString(a string) (*PeerInfo, error) {
@@ -61,11 +66,20 @@ type Stream struct {
 	s net.Stream
 }
 
-func (s *Stream) Read(b []byte) (int, error) {
-	return s.s.Read(b)
+// currently, gomobile doesnt allow using byte arrays as out parameters
+// so, for now. We have to do this dumb thing
+func (s *Stream) ReadData(max int) ([]byte, error) {
+	b := make([]byte, max)
+	n, err := io.ReadFull(s.s, b)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("read data: ", max, n, b[:n])
+	return b[:n], err
 }
 
 func (s *Stream) Write(b []byte) (int, error) {
+	fmt.Println("writing data: ", b)
 	return s.s.Write(b)
 }
 
@@ -77,8 +91,8 @@ func (s *Stream) Reset() error {
 	return s.s.Reset()
 }
 
-func (l *Libp2p) NewStream(pid *PeerID, proto protocol.ID) (*Stream, error) {
-	s, err := l.host.NewStream(context.TODO(), pid.pid, proto)
+func (l *Libp2p) NewStream(pid *PeerID, proto string) (*Stream, error) {
+	s, err := l.host.NewStream(context.TODO(), pid.pid, protocol.ID(proto))
 	if err != nil {
 		return nil, err
 	}
