@@ -18,9 +18,11 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        Libp2pPrintSomething()
+        
         
         var opterr:NSError?
-        let libp2p = Libp2pNew(&opterr)
+        libp2p = Libp2pNew(&opterr)
         if let err = opterr {
             print("bad error: ", err)
             return
@@ -53,6 +55,7 @@ class ViewController: UIViewController {
     }
     
     func doThePing() {
+        print("doing the ping")
         
         // parse this again because globals suck
         var opterr:NSError?
@@ -63,28 +66,25 @@ class ViewController: UIViewController {
         }
         
         do {
-            let stream = try libp2p?.newStream(pinfo?.id_(), proto: "/ipfs/ping/1.0.0")
+            let stream = try libp2p!.newStream(pinfo?.id_(), proto: "/ipfs/ping/1.0.0")
             var data = Data(count: 32)
-            data[4] = 6
+            data[4] = 6 // just so i can distinguish it from an empty array
             
-            let str1 = String(data: data.base64EncodedData(), encoding: String.Encoding.utf8)
-            print("about to send message \(str1)")
+            //let str1 = String(data: data.base64EncodedData(), encoding: String.Encoding.utf8)
+            //print("about to send message \(str1)")
             
             var n:Int = 0
-            try stream?.write(data, ret0_: &n)
+            try stream.write(data, ret0_: &n)
             
             print("Wrote data: \(n)")
             
-            let recv = try stream?.readData(32)
+            let recv = try stream.readData(32)
             
-            if let readdata = recv {
-                let str = String(data: readdata.base64EncodedData(), encoding: String.Encoding.utf8)
-                print("I think we pinged! \(str)")
-            } else {
-                print("possibly failed to ping?", recv)
-            }
+            let str = String(data: recv.base64EncodedData(), encoding: String.Encoding.utf8)
+            print("I think we pinged! \(str)")
+
             
-            try stream?.close()
+            try stream.close()
         } catch {
             print("new stream failed: \(error)")
         }

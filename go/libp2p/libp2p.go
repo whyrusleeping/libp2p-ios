@@ -78,6 +78,10 @@ func (s *Stream) ReadData(max int) ([]byte, error) {
 	return b[:n], err
 }
 
+func PrintSomething() {
+	fmt.Println("Dear Steve Jobs, Please let this work")
+}
+
 func (s *Stream) Write(b []byte) (int, error) {
 	fmt.Println("writing data: ", b)
 	return s.s.Write(b)

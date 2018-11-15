@@ -12,7 +12,7 @@
 		960F65DF219BF4D2008A5BE9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 960F65DD219BF4D2008A5BE9 /* Main.storyboard */; };
 		960F65E1219BF4D3008A5BE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 960F65E0219BF4D3008A5BE9 /* Assets.xcassets */; };
 		960F65E4219BF4D4008A5BE9 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 960F65E2219BF4D4008A5BE9 /* LaunchScreen.storyboard */; };
-		9678C0BD219D1FE300B11C6C /* Libp2p.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9678C0BC219D1FE300B11C6C /* Libp2p.framework */; };
+		9678C0BF219D232800B11C6C /* Libp2p.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9678C0BE219D232800B11C6C /* Libp2p.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,7 +23,7 @@
 		960F65E0219BF4D3008A5BE9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		960F65E3219BF4D4008A5BE9 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		960F65E5219BF4D4008A5BE9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		9678C0BC219D1FE300B11C6C /* Libp2p.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Libp2p.framework; sourceTree = "<group>"; };
+		9678C0BE219D232800B11C6C /* Libp2p.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Libp2p.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,7 +31,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9678C0BD219D1FE300B11C6C /* Libp2p.framework in Frameworks */,
+				9678C0BF219D232800B11C6C /* Libp2p.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,7 +43,7 @@
 			children = (
 				960F65D8219BF4D2008A5BE9 /* Libp2pTester */,
 				960F65D7219BF4D2008A5BE9 /* Products */,
-				9678C0BC219D1FE300B11C6C /* Libp2p.framework */,
+				9678C0BE219D232800B11C6C /* Libp2p.framework */,
 			);
 			sourceTree = "<group>";
 		};
