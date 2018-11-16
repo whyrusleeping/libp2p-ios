@@ -175,21 +175,24 @@ func (m *Multiaddr) parse() error {
 	return nil
 }
 
-type Conn struct {
-}
-
 type Listener struct {
 }
 
+// This needs to be implemented *by* an ios type, and then be wrappable to a net.Conn type.
+// We can then upgrade it to a multiaddr Conn, then from there give it to the upgrader
+// and have it be a fully fledged connection type
+type BridgeConn interface {
+}
+
 type Transport interface {
-	Dial(raddr *Multiaddr, p *PeerID) (*Conn, error)
+	Dial(raddr *Multiaddr, p *PeerID) (BridgeConn, error)
 
 	CanDial(addr *Multiaddr) bool
 
 	Listen(laddr *Multiaddr) (*Listener, error)
 
 	//ForEachProtocol(func(int))
-	//Protocols() []int
+	Protocols() *IntList
 
 	Proxy() bool
 }
@@ -227,14 +230,16 @@ func (tc *transportConverter) Proxy() bool {
 	return tc.t.Proxy()
 }
 
+type IntList struct {
+	arr []int
+}
+
+func (il *IntList) Push(i int) {
+	il.arr = append(il.arr, i)
+}
+
 func (tc *transportConverter) Protocols() []int {
-	var out []int
-	/* TODO: figure out how to get an array of things back...
-	tc.t.ForEachProtocol(func(i int) {
-		out = append(out, i)
-	})
-	*/
-	return out
+	return tc.t.Protocols().arr
 }
 
 var _ transport.Transport = (*transportConverter)(nil)
